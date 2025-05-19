@@ -24,8 +24,8 @@ def detect_os():
                 return "RHEL"
             elif "alpine" in data:
                 return "Alpine"
-            elif "fedora" in data:
-                return "Fedora"
+            elif "amzn" in data or "amazon" in data:
+                return "Amazon Linux"
     except:
         pass
     try:
