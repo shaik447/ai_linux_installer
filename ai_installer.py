@@ -93,7 +93,23 @@ def run_bash_script(filename):
     else:
         print(f"\n❌ Script exited with code {process.returncode}.")
 
-# Generate + approve bash script via AI
+def run_bash_script_with_error_capture(filename):
+    print(f"\n🚀 Running: ./{filename}\n")
+    process = subprocess.Popen(
+        ["sudo", f"./{filename}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
+    )
+    output_lines = []
+    for line in process.stdout:
+        print(line, end='')
+        output_lines.append(line)
+    process.wait()
+    output = "".join(output_lines)
+    return process.returncode, output
+
 def get_install_script(task):
     os_type = detect_os()
     print(f"🖥️ Detected OS: {os_type}")
@@ -115,9 +131,48 @@ def get_install_script(task):
         correction = input("✏️  What needs to be modified in the script?\n> ").strip()
         current_task = f"{task}\nModify it like this: {correction}"
 
+def get_install_script_autonomous(task, max_attempts=5):
+    os_type = detect_os()
+    print(f"🖥️ Detected OS: {os_type}")
+    current_task = task
+    last_script = ""
+    last_error = ""
+    attempt = 1
+
+    while attempt <= max_attempts:
+        print(f"\n🤖 Attempt {attempt} to achieve goal: {task}")
+        if last_error:
+            # Ask LLM to fix the script based on error
+            prompt = (
+                f"{task}\n"
+                f"The previous script failed with this error:\n{last_error}\n"
+                f"Here was the previous script:\n{last_script}\n"
+                "Please generate a corrected bash script to achieve the goal."
+            )
+        else:
+            prompt = task
+
+        script = llm.predict(task_to_bash.format(task=prompt, os=os_type)).strip()
+        script = clean_script_output(script)
+        print("\n📜 Generated Bash Script:")
+        print("=" * 50)
+        print(script)
+        print("=" * 50)
+
+        filename = save_script_to_file(script)
+        returncode, output = run_bash_script_with_error_capture(filename)
+        if returncode == 0:
+            print("\n✅ Goal achieved!")
+            return
+        else:
+            print(f"\n❌ Script failed with exit code {returncode}. Trying to self-heal...")
+            last_error = output[-2000:]  # Limit error context for prompt size
+            last_script = script
+            attempt += 1
+
+    print("\n🚨 Maximum attempts reached. Could not achieve the goal automatically.")
+
 # Main program
 if __name__ == "__main__":
     user_input = input("💬 What do you want to install?\n> ")
-    final_script = get_install_script(user_input)
-    filename = save_script_to_file(final_script)
-    run_bash_script(filename)
+    get_install_script_autonomous(user_input)
