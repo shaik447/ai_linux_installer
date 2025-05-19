@@ -25,7 +25,7 @@ def detect_os():
             elif "alpine" in data:
                 return "Alpine"
             elif "amzn" in data or "amazon" in data:
-                return "Amazon Linux"
+                return "Amazon Linux 2023"
     except:
         pass
     try:
