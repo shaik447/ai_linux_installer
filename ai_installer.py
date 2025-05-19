@@ -159,6 +159,11 @@ def get_install_script_autonomous(task, max_attempts=5):
         print(script)
         print("=" * 50)
 
+        confirm = input("✅ Do you want to run this script? (y/n): ").strip().lower()
+        if confirm != "y":
+            print("❌ Aborted by user.")
+            return
+
         filename = save_script_to_file(script)
         returncode, output = run_bash_script_with_error_capture(filename)
         if returncode == 0:
@@ -174,5 +179,5 @@ def get_install_script_autonomous(task, max_attempts=5):
 
 # Main program
 if __name__ == "__main__":
-    user_input = input("💬 What do you want to install?\n> ")
+    user_input = input("💬 What do you want to install or remove?\n> ")
     get_install_script_autonomous(user_input)
